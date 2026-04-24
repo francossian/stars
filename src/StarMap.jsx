@@ -110,6 +110,17 @@ function StarPoints({ data, radiusRef }) {
   );
 }
 
+// ─── CameraResizer ────────────────────────────────────────────────────────────
+
+function CameraResizer() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    camera.aspect = size.width / size.height;
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+  return null;
+}
+
 // ─── Module-level temp vectors ────────────────────────────────────────────────
 
 const _fwd = new THREE.Vector3();
@@ -1150,6 +1161,7 @@ export default function StarMap() {
           style={{ background: "#000", cursor: "crosshair" }}
           camera={{ position: RESET_POS, fov: 75, near: 0.001, far: 100000 }}
         >
+          <CameraResizer />
           <FlightControls
             speedRef={speedRef}
             radiusRef={radiusRef}
