@@ -524,95 +524,7 @@ function HUD({ data }) {
 
 // ─── D-pad ────────────────────────────────────────────────────────────────────
 
-function ArrowBtn({ code, children }) {
-  const [pressed, setPressed] = useState(false);
-  const fire = (type) =>
-    window.dispatchEvent(new KeyboardEvent(type, { code, bubbles: true }));
 
-  return (
-    <button
-      onPointerDown={(e) => {
-        e.preventDefault();
-        setPressed(true);
-        fire("keydown");
-      }}
-      onPointerUp={() => {
-        setPressed(false);
-        fire("keyup");
-      }}
-      onPointerLeave={() => {
-        setPressed(false);
-        fire("keyup");
-      }}
-      style={{
-        width: 30,
-        height: 30,
-        background: pressed ? "#1c1c38" : "#0e0e20",
-        border: "1px solid #252545",
-        borderBottom: pressed ? "1px solid #252545" : "3px solid #1a1a36",
-        borderRadius: 4,
-        color: pressed ? "#aabbff" : "#5566aa",
-        fontSize: "0.75rem",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transform: pressed ? "translateY(2px)" : "none",
-        transition: "transform 0.05s, border-bottom 0.05s, color 0.05s",
-        userSelect: "none",
-        touchAction: "none",
-        WebkitUserSelect: "none",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function DPad() {
-  return (
-    <div>
-      <div
-        style={{
-          color: "#333a60",
-          fontFamily: "monospace",
-          fontSize: "0.62rem",
-          letterSpacing: "0.1em",
-          marginBottom: 10,
-        }}
-      >
-        LOOK
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 30px)",
-          gridTemplateRows: "repeat(3, 30px)",
-          gap: 4,
-          width: "fit-content",
-        }}
-      >
-        <div />
-        <ArrowBtn code="ArrowUp">↑</ArrowBtn>
-        <div />
-        <ArrowBtn code="ArrowLeft">←</ArrowBtn>
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            background: "#08081a",
-            border: "1px solid #151530",
-            borderRadius: 4,
-          }}
-        />
-        <ArrowBtn code="ArrowRight">→</ArrowBtn>
-        <div />
-        <ArrowBtn code="ArrowDown">↓</ArrowBtn>
-        <div />
-      </div>
-    </div>
-  );
-}
 
 // ─── Glossary ─────────────────────────────────────────────────────────────────
 
@@ -872,6 +784,7 @@ function Sidebar({
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   return (
     <aside
+      className="sidebar-scroll"
       style={{
         width: 220,
         flexShrink: 0,
@@ -882,7 +795,7 @@ function Sidebar({
         padding: "24px 18px",
         gap: 24,
         userSelect: "none",
-        overflow: "hidden",
+        overflowY: "auto",
       }}
     >
       <div style={{ marginBottom: 4 }}>
@@ -981,8 +894,6 @@ function Sidebar({
         <div>E / Q &nbsp;— up / down</div>
         <div>Hover — inspect star</div>
       </div>
-
-      <DPad />
 
       <div style={{ flex: 1 }} />
 
@@ -1276,22 +1187,6 @@ export default function StarMap() {
 
         <HUD data={hudData} />
 
-        {stars && !tooltip && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 14,
-              right: 16,
-              color: "#1a1e38",
-              fontFamily: "monospace",
-              fontSize: "0.6rem",
-              letterSpacing: "0.1em",
-              pointerEvents: "none",
-            }}
-          >
-            drag to look · WASD to fly · hover stars to inspect
-          </div>
-        )}
       </div>
 
       <Tooltip info={tooltip} />

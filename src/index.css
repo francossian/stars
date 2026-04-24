@@ -57,6 +57,30 @@ html, body {
   background: #5566ff;
 }
 
+/* ─── Sidebar scrollbar ────────────────────────────────────────────────────── */
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #1e2248 transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #1e2248;
+  border-radius: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #3344aa;
+}
+
 /* ─── Glossary scrollbar ───────────────────────────────────────────────────── */
 
 .glossary-scroll {
