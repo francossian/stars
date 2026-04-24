@@ -1,16 +1,73 @@
-# React + Vite
+# Star Explorer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive 3D star map built with React and Three.js, powered by the HYG v4.1 stellar catalogue. Fly freely through the solar neighbourhood, inspect individual stars, and filter the visible sky by distance.
 
-Currently, two official plugins are available:
+![Star Explorer](public/favicon.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **120 000+ stars** rendered as GPU points, filtered to visual magnitude < 8
+- **B–V color mapping** — each star is colored by its spectral temperature, from deep blue (O-type) through white, yellow, orange to red (M-type)
+- **Distance-based culling** — a radius slider controls a GPU-side visibility sphere; only stars within range are rendered, with zero JS overhead per frame
+- **Free-flight navigation** — drag to look, WASD to fly, E/Q to move vertically, arrow keys to rotate; no fixed pivot point
+- **Star tooltip** — hover any in-range star to see its name, spectral type, magnitude, B–V index, and distance from your position and from Sol
+- **Live HUD** — bottom-left panel shows stars in range, nearest star, and a spectral-type breakdown bar
+- **Glossary** — in-app reference for every abbreviated term (pc, Mag, B–V, spectral types, catalogue IDs, etc.)
+- **Sol marker** — the Sun is always rendered at the origin with a distinct warm-white point
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Dataset
 
-## Expanding the ESLint configuration
+**HYG v4.1** — a merged catalogue combining:
+- **H**ipparcos (ESA astrometry satellite, ~118 000 stars with precise parallax)
+- **Y**ale Bright Star Catalogue
+- **G**liese Catalogue of Nearby Stars
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Stars are stored in Cartesian coordinates (parsecs, Sun at origin). More info: [astronexus/HYG-Database](https://github.com/astronexus/HYG-Database)
+
+## Navigation
+
+| Input | Action |
+|---|---|
+| Click + drag | Look around |
+| W / S | Fly forward / backward |
+| A / D | Strafe left / right |
+| E / Q | Move up / down |
+| Arrow keys or D-pad | Rotate view |
+| Radius slider | Expand / shrink the visible star sphere |
+| Speed slider | Set flight speed (0.1 – 200 pc/s) |
+| Return to Sol | Reset position to 1 pc from the Sun |
+
+## Tech Stack
+
+| Layer | Library |
+|---|---|
+| UI | React 19 + Vite |
+| 3D rendering | Three.js via `@react-three/fiber` |
+| Helpers | `@react-three/drei` (OrbitControls base) |
+| Data loading | D3 (`d3.csv`) |
+| Shaders | Custom GLSL — per-vertex color, size attenuation, GPU radius cull |
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). The catalogue (~8 MB CSV) is fetched on first load.
+
+## Project Structure
+
+```
+src/
+  StarMap.jsx   # All scene logic: shaders, flight controls, HUD, sidebar, tooltip, glossary
+  index.css     # Global reset + range slider + glossary scrollbar styles
+public/
+  hygdata_v41.csv   # HYG v4.1 stellar catalogue (served as static asset)
+```
+
+## Credits
+
+Dataset — HYG v4.1 by [David Nash](https://github.com/astronexus)
+
+Built by **Franco Guiragossian** — [dataviz.ar](https://dataviz.ar)
