@@ -147,6 +147,11 @@ function FlightControls({
   const drag = useRef({ active: false, x: 0, y: 0 });
   const keys = useRef(new Set());
   const frameCount = useRef(0);
+  const touch = useRef({ active: false, x: 0, y: 0, t: 0, moved: 0 });
+  const holdTimer = useRef(null);
+  const holdActive = useRef(false);
+  const pinchRef = useRef({ active: false, dist: 0 });
+  const pinchDelta = useRef(0);
 
   useEffect(() => {
     camera.position.set(...RESET_POS);
@@ -237,15 +242,79 @@ function FlightControls({
     };
     const onLeave = () => onTooltip(null);
 
+    const onTouchStart = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touch.current = { active: true, x: t.clientX, y: t.clientY, t: Date.now(), moved: 0 };
+        clearTimeout(holdTimer.current);
+        holdActive.current = false;
+        holdTimer.current = setTimeout(() => {
+          if (touch.current.moved < 18) holdActive.current = true;
+        }, 350);
+      } else if (e.touches.length >= 2) {
+        clearTimeout(holdTimer.current);
+        holdActive.current = false;
+        touch.current.active = false;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const dx = t0.clientX - t1.clientX, dy = t0.clientY - t1.clientY;
+        pinchRef.current = { active: true, dist: Math.sqrt(dx * dx + dy * dy) };
+      }
+    };
+    const onTouchMove = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 1 && touch.current.active) {
+        const t = e.touches[0];
+        const dx = t.clientX - touch.current.x;
+        const dy = t.clientY - touch.current.y;
+        touch.current.moved += Math.sqrt(dx * dx + dy * dy);
+        touch.current.x = t.clientX;
+        touch.current.y = t.clientY;
+        if (touch.current.moved > 18 && !holdActive.current) clearTimeout(holdTimer.current);
+        yaw.current -= dx * 0.005;
+        pitch.current = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.49, pitch.current - dy * 0.005));
+      } else if (e.touches.length >= 2 && pinchRef.current.active) {
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const dx = t0.clientX - t1.clientX, dy = t0.clientY - t1.clientY;
+        const newDist = Math.sqrt(dx * dx + dy * dy);
+        pinchDelta.current += (newDist - pinchRef.current.dist) * 0.02;
+        pinchRef.current.dist = newDist;
+      }
+    };
+    const onTouchEnd = (e) => {
+      e.preventDefault();
+      clearTimeout(holdTimer.current);
+      if (e.touches.length === 0) {
+        if (touch.current.active && !holdActive.current) {
+          const elapsed = Date.now() - touch.current.t;
+          if (elapsed < 250 && touch.current.moved < 18) findStar(touch.current.x, touch.current.y);
+        }
+        holdActive.current = false;
+        touch.current.active = false;
+        pinchRef.current.active = false;
+      } else if (e.touches.length === 1) {
+        pinchRef.current.active = false;
+        const t = e.touches[0];
+        touch.current = { active: true, x: t.clientX, y: t.clientY, t: Date.now(), moved: 0 };
+        holdActive.current = false;
+      }
+    };
+
     el.addEventListener("mousedown", onDown);
     el.addEventListener("mouseleave", onLeave);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: false });
     return () => {
       el.removeEventListener("mousedown", onDown);
       el.removeEventListener("mouseleave", onLeave);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
     };
   }, [gl, radiusRef, starsRef, onTooltip]);
 
@@ -267,6 +336,11 @@ function FlightControls({
     if (k.has("KeyD")) camera.position.addScaledVector(_right, d);
     if (k.has("KeyE")) camera.position.addScaledVector(_up, d);
     if (k.has("KeyQ")) camera.position.addScaledVector(_up, -d);
+    if (holdActive.current) camera.position.addScaledVector(_fwd, d);
+    if (pinchDelta.current !== 0) {
+      camera.position.addScaledVector(_fwd, pinchDelta.current);
+      pinchDelta.current = 0;
+    }
 
     const rot = 1.2 * dt;
     if (k.has("ArrowLeft")) yaw.current += rot;
@@ -292,7 +366,7 @@ function FlightControls({
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 
-function Tooltip({ info }) {
+function Tooltip({ info, isMobile, onClose }) {
   if (!info) return null;
   const { star: s, x, y, camDist } = info;
   const name = s.proper || (s.hip ? `HIP ${s.hip}` : s.hd ? `HD ${s.hd}` : "—");
@@ -300,8 +374,9 @@ function Tooltip({ info }) {
     <div
       style={{
         position: "fixed",
-        left: x + 14,
-        top: y - 8,
+        ...(isMobile
+          ? { left: "50%", top: 16, transform: "translateX(-50%)" }
+          : { left: x + 14, top: y - 8 }),
         background: "rgba(4, 4, 18, 0.92)",
         border: "1px solid rgba(60, 100, 255, 0.3)",
         borderRadius: 4,
@@ -309,19 +384,40 @@ function Tooltip({ info }) {
         fontFamily: "monospace",
         fontSize: "0.7rem",
         color: "#9aaac8",
-        pointerEvents: "none",
+        pointerEvents: isMobile ? "auto" : "none",
         lineHeight: 1.85,
         zIndex: 200,
         minWidth: 180,
         backdropFilter: "blur(6px)",
       }}
     >
+      {isMobile && (
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: 6,
+            right: 8,
+            background: "none",
+            border: "none",
+            color: "#5566aa",
+            cursor: "pointer",
+            fontSize: "1rem",
+            fontFamily: "monospace",
+            padding: 0,
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+      )}
       <div
         style={{
           color: "#e8eeff",
           fontWeight: 700,
           fontSize: "0.8rem",
           marginBottom: 5,
+          paddingRight: isMobile ? 18 : 0,
         }}
       >
         {name}
@@ -791,8 +887,12 @@ function Sidebar({
   onReset,
   loading,
   camPos,
+  isMobile,
+  isOpen,
+  onToggle,
 }) {
   const [glossaryOpen, setGlossaryOpen] = useState(false);
+  if (isMobile && !isOpen) return null;
   return (
     <aside
       className="sidebar-scroll"
@@ -807,6 +907,14 @@ function Sidebar({
         gap: 24,
         userSelect: "none",
         overflowY: "auto",
+        ...(isMobile && {
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "100vh",
+          zIndex: 100,
+          boxShadow: "4px 0 24px rgba(0,0,0,0.7)",
+        }),
       }}
     >
       <div style={{ marginBottom: 4 }}>
@@ -890,10 +998,21 @@ function Sidebar({
         >
           CONTROLS
         </div>
-        <div>Drag / arrows — look</div>
-        <div>WASD &nbsp;— fly</div>
-        <div>E / Q &nbsp;— up / down</div>
-        <div>Hover — inspect star</div>
+        {isMobile ? (
+          <>
+            <div>Drag — look</div>
+            <div>Hold — fly forward</div>
+            <div>Pinch — move in/out</div>
+            <div>Tap — inspect star</div>
+          </>
+        ) : (
+          <>
+            <div>Drag / arrows — look</div>
+            <div>WASD &nbsp;— fly</div>
+            <div>E / Q &nbsp;— up / down</div>
+            <div>Hover — inspect star</div>
+          </>
+        )}
       </div>
 
       <div style={{ flex: 1 }} />
@@ -1161,6 +1280,8 @@ export default function StarMap() {
   const [tooltip, setTooltip] = useState(null);
   const [resetSignal, setResetSignal] = useState(0);
   const [camPos, setCamPos] = useState({ x: 0, y: 0, z: 1 });
+  const [isMobile] = useState(() => window.matchMedia("(pointer: coarse)").matches);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const speedRef = useRef(speed);
   const radiusRef = useRef(radius);
@@ -1216,6 +1337,43 @@ export default function StarMap() {
         overflow: "hidden",
       }}
     >
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99,
+            background: "rgba(0,0,0,0.4)",
+          }}
+        />
+      )}
+      {isMobile && (
+        <button
+          onClick={() => setSidebarOpen((o) => !o)}
+          style={{
+            position: "fixed",
+            top: 14,
+            left: 14,
+            zIndex: 101,
+            background: "rgba(7,7,15,0.88)",
+            border: "1px solid #1a1a3a",
+            borderRadius: 6,
+            color: "#7788cc",
+            fontFamily: "monospace",
+            fontSize: "1.2rem",
+            width: 40,
+            height: 40,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            lineHeight: 1,
+          }}
+        >
+          {sidebarOpen ? "✕" : "☰"}
+        </button>
+      )}
       <Sidebar
         speed={speed}
         onSpeed={setSpeed}
@@ -1224,6 +1382,9 @@ export default function StarMap() {
         onReset={handleReset}
         loading={!stars}
         camPos={camPos}
+        isMobile={isMobile}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen((o) => !o)}
       />
 
       <div style={{ flex: 1, position: "relative", background: "#000" }}>
@@ -1271,7 +1432,7 @@ export default function StarMap() {
 
       </div>
 
-      <Tooltip info={tooltip} />
+      <Tooltip info={tooltip} isMobile={isMobile} onClose={() => setTooltip(null)} />
     </div>
   );
 }
