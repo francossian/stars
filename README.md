@@ -66,6 +66,10 @@ public/
   hygdata_v41.csv   # HYG v4.1 stellar catalogue (served as static asset)
 ```
 
+## Data License
+
+The HYG v4.1 catalogue is released under [Creative Commons Attribution-ShareAlike (CC BY-SA)](https://creativecommons.org/licenses/by-sa/2.5/) by David Nash. The CSV is distributed here unchanged and under the same license. See the [HYG-Database repository](https://github.com/astronexus/HYG-Database) for the authoritative license text.
+
 ## Credits
 
 Dataset — HYG v4.1 by [David Nash](https://github.com/astronexus)
