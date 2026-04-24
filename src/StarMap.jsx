@@ -553,7 +553,7 @@ const GLOSSARY = [
       ],
       [
         "Mag",
-        "Apparent magnitude — how bright a star looks from Earth. Scale is inverted: lower = brighter. Sun = −26.7. Naked-eye limit ≈ 6.5. This app shows stars up to mag 8.",
+        "Apparent magnitude — how bright a star looks from Earth. Scale is inverted: lower = brighter. Sun = −26.7. Naked-eye limit ≈ 6.5.",
       ],
       [
         "Abs Mag",
@@ -872,17 +872,7 @@ function Sidebar({
         onChange={onSpeed}
       />
 
-      {/* Radius */}
-      <SliderControl
-        label="VISIBLE RADIUS"
-        value={radius}
-        unit="pc"
-        min={1}
-        max={5000}
-        step={1}
-        onChange={onRadius}
-        note="1 pc ≈ 3.26 light-years"
-      />
+      <RadiusButtons value={radius} onChange={onRadius} />
 
       <Divider />
 
@@ -937,6 +927,86 @@ function Val({ children }) {
 
 function Divider() {
   return <div style={{ borderTop: "1px solid #13132a", margin: "0 -18px" }} />;
+}
+
+const RADIUS_LEVELS = [
+  { ordinal: "I",   value: 1,    label: "1 pc"    },
+  { ordinal: "II",  value: 50,   label: "50 pc"   },
+  { ordinal: "III", value: 100,  label: "100 pc"  },
+  { ordinal: "IV",  value: 500,  label: "500 pc"  },
+  { ordinal: "V",   value: 1000, label: "1000 pc" },
+  { ordinal: "VI",  value: 1e9,  label: "MAX"     },
+];
+
+function RadiusButtons({ value, onChange }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: "0.68rem",
+          color: "#4a5880",
+          letterSpacing: "0.1em",
+          marginBottom: 10,
+        }}
+      >
+        VISIBLE RADIUS
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 3 }}>
+        {RADIUS_LEVELS.map((lvl) => {
+          const active = value === lvl.value;
+          return (
+            <button
+              key={lvl.ordinal}
+              onClick={() => onChange(lvl.value)}
+              style={{
+                background: active ? "#0d1a3a" : "transparent",
+                border: `1px solid ${active ? "#3355aa" : "#1a1a3a"}`,
+                borderRadius: 3,
+                padding: "6px 2px",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+                transition: "all 0.15s",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                  color: active ? "#aabbff" : "#3a4870",
+                }}
+              >
+                {lvl.ordinal}
+              </span>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: "0.48rem",
+                  color: active ? "#6677aa" : "#232840",
+                }}
+              >
+                {lvl.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: "0.56rem",
+          color: "#1e2440",
+          marginTop: 6,
+        }}
+      >
+        1 pc ≈ 3.26 light-years
+      </div>
+    </div>
+  );
 }
 
 function SliderControl({ label, value, unit, min, max, step, onChange, note }) {
@@ -1106,7 +1176,7 @@ export default function StarMap() {
   useEffect(() => {
     d3.csv("/hygdata_v41.csv").then((raw) => {
       const filtered = raw
-        .filter((d) => isFinite(+d.mag) && +d.mag < 8 && +d.dist > 0)
+        .filter((d) => isFinite(+d.mag) && +d.dist > 0)
         .map((d) => ({
           x: +d.x,
           y: +d.y,

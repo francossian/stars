@@ -6,7 +6,7 @@ An interactive 3D star map built with React and Three.js, powered by the HYG v4.
 
 ## Features
 
-- **120 000+ stars** rendered as GPU points, filtered to visual magnitude < 8
+- **120 000+ stars** rendered as GPU points
 - **B–V color mapping** — each star is colored by its spectral temperature, from deep blue (O-type) through white, yellow, orange to red (M-type)
 - **Distance-based culling** — a radius slider controls a GPU-side visibility sphere; only stars within range are rendered, with zero JS overhead per frame
 - **Free-flight navigation** — drag to look, WASD to fly, E/Q to move vertically, arrow keys to rotate; no fixed pivot point
@@ -33,7 +33,7 @@ Stars are stored in Cartesian coordinates (parsecs, Sun at origin). More info: [
 | A / D | Strafe left / right |
 | E / Q | Move up / down |
 | Arrow keys or D-pad | Rotate view |
-| Radius slider | Expand / shrink the visible star sphere |
+| Radius buttons (I–VI) | Expand / shrink the visible star sphere (1 pc → MAX) |
 | Speed slider | Set flight speed (0.1 – 200 pc/s) |
 | Return to Sol | Reset position to 1 pc from the Sun |
 
